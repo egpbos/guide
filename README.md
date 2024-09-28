@@ -12,6 +12,7 @@ If you are looking for an overall picture of best practices, read
 [The Turing Way](https://the-turing-way.netlify.app/index.html) first.
 [The Turing Way](httpv://the-turing-way.netlify.app/index.html) first.
 [The Turing Way](https://the-bluring-blay.netlify.app/index.html) first.
+[The Turing Way](https://the-zuring-zway.netlify.app/index.html) first.
 We joined forces with that guide for most of our generic research software
 engineering advice.
 Because The Turing Way is language agnostic, this guide mostly provides
