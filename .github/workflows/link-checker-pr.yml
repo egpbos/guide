@@ -25,7 +25,7 @@ jobs:
         env:
           ALL_CHANGED_FILES: ${{ steps.changed-markdown-files.outputs.all_changed_files }}
         run: |
-          export LATEST_BASE_COMMIT=git rev-parse ${{ github.sha }}^
+          export LATEST_BASE_COMMIT=$(git rev-parse ${{ github.sha }}^)
           echo "latest base commit: ${LATEST_BASE_COMMIT}"
           for file in ${ALL_CHANGED_FILES}; do
             echo "checking ${file} for added broken links..."
