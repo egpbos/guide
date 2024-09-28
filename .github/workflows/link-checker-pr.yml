@@ -5,6 +5,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       files: ${{ steps.changed-markdown-files.outputs.all_changed_files }}
+      base_sha: ${{ steps.get-base-sha.outputs.base_sha }}
     steps:
       - uses: actions/checkout@v4
 
@@ -16,6 +17,9 @@ jobs:
           files: |
              **.md
           matrix: true
+      - name: get base SHA
+        id: get-base-sha
+        run: echo 'base_sha=$(git rev-parse ${{ github.sha }}^)' >> $GITHUB_OUTPUT
 
   installLychee:
     runs-on: ubuntu-latest
@@ -49,10 +53,6 @@ jobs:
       - name: set lychee permissions because artifact permissions get reset
         run: chmod +x lychee
       - name: Check all this PR's additions for broken links
-        env:
-          ALL_CHANGED_FILES: ${{ steps.changed-markdown-files.outputs.all_changed_files }}
         run: |
-          export LATEST_BASE_COMMIT=$(git rev-parse ${{ github.sha }}^)
-          echo "latest base commit: ${LATEST_BASE_COMMIT}"
           echo "checking ${{ matrix.file }} for added broken links..."
-          git diff -U0 ${LATEST_BASE_COMMIT} ${{ github.event.pull_request.head.sha }} -- ${{ matrix.file }} | grep -v "+++" | grep "^+" | cut -c 2- | ./lychee -
+          git diff -U0 ${{ needs.changedFiles.outputs.base_sha }} ${{ github.event.pull_request.head.sha }} -- ${{ matrix.file }} | grep -v "+++" | grep "^+" | cut -c 2- | ./lychee -
