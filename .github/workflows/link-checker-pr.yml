@@ -1,28 +1,33 @@
 name: Link Checker for Pull requests
 on: pull_request
 jobs:
+  fileChanges:
+    runs-on: ubuntu-latest
+    outputs:
+      diff-files: ${{ steps.git-diff-action.outputs.json-diff.files }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: GrantBirki/git-diff-action@v2.7.0
+        id: git-diff-action
+        with:
+          json_diff_file_output: diff.json
+          file_output_only: "true"
+
   linkChecker:
     runs-on: ubuntu-latest
+    needs: fileChanges
+    strategy:
+      matrix:
+        file: ${{ fromJSON(needs.fileChanges.outputs.diff-files) }}
     steps:
-      - uses: actions/checkout@v3
-      - id: changed_files
-        uses: jitterbit/get-changed-files@v1
-      - name: Link Checker
-        uses: lycheeverse/lychee-action@v1.7.0
-        id: lychee
-        env:
-          GITHUB_TOKEN: ${{secrets.TOKEN_GITHUB}}        
-        with:
-          args: ${{ steps.changed_files.outputs.all }}
-      - name: Count broken links
+      - name: download Lychee
         run: |
-            broken_max=10
-            broken_count=$(printf "%d" $(grep "🚫 Errors" lychee/out.md | cut -d'|' -f3))
-            if [ "$broken_count" -gt "$broken_max" ]; then
-                echo "Number of broken links (${broken_count}) exceeds maximum allowed number (${broken_max})."
-                cat lychee/out.md
-                exit 1
-            else
-                echo "Number of broken links (${broken_count}) less than or equal to maximum allowed number (${broken_max})."
-                exit 0
-            fi
+           wget https://github.com/lycheeverse/lychee/releases/download/nightly/lychee-x86_64-unknown-linux-gnu.tar.gz
+           tar xzf lychee-x86_64-unknown-linux-gnu.tar.gz
+
+      - name: Check all this PR's additions for broken links
+        run: |
+          export LATEST_BASE_COMMIT=$(git rev-parse ${{ github.sha }}^)
+          echo "latest base commit: ${LATEST_BASE_COMMIT}"
+          echo "checking ${{ matrix.file.path }} for added broken links..."
+          git diff -U0 ${LATEST_BASE_COMMIT} ${{ github.event.pull_request.head.sha }} -- ${{ matrix.file.path }} | grep -v "+++" | grep "^+" | cut -c 2- | ./lychee -
