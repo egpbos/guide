@@ -4,25 +4,29 @@ jobs:
   linkChecker:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - id: changed_files
-        uses: jitterbit/get-changed-files@v1
-      - name: Link Checker
-        uses: lycheeverse/lychee-action@v1.7.0
-        id: lychee
-        env:
-          GITHUB_TOKEN: ${{secrets.TOKEN_GITHUB}}        
+      - uses: actions/checkout@v4
+
+      - name: Get changed markdown files
+        id: changed-markdown-files
+        uses: tj-actions/changed-files@v45
         with:
-          args: ${{ steps.changed_files.outputs.all }}
-      - name: Count broken links
+          # Avoid using single or double quotes for multiline patterns
+          files: |
+             **.md
+      
+      - name: download Lychee
         run: |
-            broken_max=10
-            broken_count=$(printf "%d" $(grep "🚫 Errors" lychee/out.md | cut -d'|' -f3))
-            if [ "$broken_count" -gt "$broken_max" ]; then
-                echo "Number of broken links (${broken_count}) exceeds maximum allowed number (${broken_max})."
-                cat lychee/out.md
-                exit 1
-            else
-                echo "Number of broken links (${broken_count}) less than or equal to maximum allowed number (${broken_max})."
-                exit 0
-            fi
+          wget https://github.com/lycheeverse/lychee/releases/download/nightly/lychee-x86_64-unknown-linux-gnu.tar.gz
+          tar xzf lychee-x86_64-unknown-linux-gnu.tar.gz
+
+      - name: Check all this PR's additions for broken links
+        if: steps.changed-markdown-files.outputs.any_changed == 'true'
+        env:
+          ALL_CHANGED_FILES: ${{ steps.changed-markdown-files.outputs.all_changed_files }}
+        run: |
+          export LATEST_BASE_COMMIT=git rev-parse ${{ github.sha }}^
+          echo "latest base commit: ${LATEST_BASE_COMMIT}"
+          for file in ${ALL_CHANGED_FILES}; do
+            echo "checking ${file} for added broken links..."
+            git diff -U0 ${LATEST_BASE_COMMIT} ${{ github.event.pull_request.head.sha }} -- ${file} | grep -v "+++" | grep "^+" | cut -c 2- | ./lychee -
+          done
