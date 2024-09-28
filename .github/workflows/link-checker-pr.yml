@@ -46,6 +46,8 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: lychee-executable
+      - name: set lychee permissions because artifact permissions get reset
+        run: chmod +x lychee
       - name: Check all this PR's additions for broken links
         env:
           ALL_CHANGED_FILES: ${{ steps.changed-markdown-files.outputs.all_changed_files }}
