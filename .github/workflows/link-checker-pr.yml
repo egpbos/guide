@@ -8,6 +8,8 @@ jobs:
       base_sha: ${{ steps.get-base-sha.outputs.base_sha }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
       - name: Get changed markdown files
         id: changed-markdown-files
         uses: tj-actions/changed-files@v45
@@ -29,6 +31,8 @@ jobs:
       fail-fast: false
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
       - name: download Lychee
         run: |
           wget https://github.com/lycheeverse/lychee/releases/download/nightly/lychee-x86_64-unknown-linux-gnu.tar.gz
