@@ -5,11 +5,8 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       files: ${{ steps.changed-markdown-files.outputs.all_changed_files }}
-      base_sha: ${{ steps.get-base-sha.outputs.base_sha }}
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 2
       - name: Get changed markdown files
         id: changed-markdown-files
         uses: tj-actions/changed-files@v45
@@ -18,9 +15,6 @@ jobs:
           files: |
              **.md
           matrix: true
-      - name: get base SHA
-        id: get-base-sha
-        run: echo 'base_sha=$(git rev-parse ${{ github.sha }}^)' >> $GITHUB_OUTPUT
   
   linkChecker:
     runs-on: ubuntu-latest
@@ -37,9 +31,7 @@ jobs:
         run: |
           wget https://github.com/lycheeverse/lychee/releases/download/nightly/lychee-x86_64-unknown-linux-gnu.tar.gz
           tar xzf lychee-x86_64-unknown-linux-gnu.tar.gz
-      - name: debug failing base_sha stuff
-        run: |
-          git log --pretty=oneline | head -n 20
       - name: Check all this file's additions for broken links
         run: |
-          git diff -U0 ${{ needs.changedFiles.outputs.base_sha }} ${{ github.event.pull_request.head.sha }} -- ${{ matrix.file }} | grep -v "+++" | grep "^+" | cut -c 2- | ./lychee -
+          export base_sha=$(git rev-parse ${{ github.sha }}^)
+          git diff -U0 ${base_sha} ${{ github.event.pull_request.head.sha }} -- ${{ matrix.file }} | grep -v "+++" | grep "^+" | cut -c 2- | ./lychee -
